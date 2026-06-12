@@ -1,0 +1,63 @@
+# ============================================================
+# ReAct+CoT AI Agent 智能助手 - Docker Compose 编排
+# ============================================================
+
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: react_agent
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    # 环境变量（敏感信息建议通过 .env 文件传入）
+    environment:
+      # --- LLM 配置（必须修改为自己的 API Key） ---
+      - LLM_API_KEY=${LLM_API_KEY:-your-api-key-here}
+      - LLM_API_BASE=${LLM_API_BASE:-https://api.deepseek.com/v1}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME:-deepseek-chat}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.3}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-4096}
+      - LLM_REQUEST_TIMEOUT=${LLM_REQUEST_TIMEOUT:-60}
+      - LLM_MAX_RETRIES=${LLM_MAX_RETRIES:-3}
+      - LLM_RETRY_DELAY=${LLM_RETRY_DELAY:-2}
+      # --- ReAct 配置 ---
+      - REACT_MAX_ITERATIONS=${REACT_MAX_ITERATIONS:-10}
+      - REACT_OUTPUT_VALIDATION=${REACT_OUTPUT_VALIDATION:-true}
+      - REACT_MAX_RETRIES=${REACT_MAX_RETRIES:-3}
+      # --- 记忆管理 ---
+      - MEMORY_WINDOW_SIZE=${MEMORY_WINDOW_SIZE:-12}
+      - MEMORY_COMPRESSION_ENABLED=${MEMORY_COMPRESSION_ENABLED:-true}
+      - MEMORY_MAX_TOKENS=${MEMORY_MAX_TOKENS:-8000}
+      # --- 数据库 ---
+      - DB_TYPE=${DB_TYPE:-sqlite}
+      - DB_PATH=${DB_PATH:-./data/agent.db}
+      # --- 服务 ---
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8000
+      - SERVER_DEBUG=${SERVER_DEBUG:-false}
+      # --- 日志 ---
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_DIR=./logs
+      - LOG_MAX_BYTES=${LOG_MAX_BYTES:-10485760}
+      - LOG_BACKUP_COUNT=${LOG_BACKUP_COUNT:-5}
+    # 持久化数据（数据库、日志）
+    volumes:
+      - agent_data:/app/data
+      - agent_logs:/app/logs
+    # 网络
+    networks:
+      - agent_network
+
+# 命名卷（Docker 自动管理，数据持久化）
+volumes:
+  agent_data:
+    driver: local
+  agent_logs:
+    driver: local
+
+# 网络
+networks:
+  agent_network:
+    driver: bridge
