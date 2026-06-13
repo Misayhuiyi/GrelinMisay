@@ -1,185 +1,221 @@
-# ReAct+CoT AI Agent 智能助手
+# GrelinMisay
 
-基于 **ReAct 推理框架** + **CoT 思维链** 的轻量化 AI Agent 智能助手后端工程。
+**健身目标管理助手** —— 一款帮助用户设定健身目标、记录训练数据、管理日程的跨端应用。
 
-## 项目特性
+## 项目简介
 
-| 特性 | 说明 |
+GrelinMisay 是一个全栈健身管理应用，包含：
+
+- **后端**：FastAPI + SQLAlchemy + SQLite，提供 RESTful API
+- **前端**：Taro (React) 跨端框架，支持 H5 / 微信小程序 / APP
+- **AI 助手**：基于 ReAct+CoT 框架的智能对话助手
+
+## 功能模块
+
+| 模块 | 功能 |
 |------|------|
-| **手写 ReAct 引擎** | 从零实现 Thought-Action-Observation 循环，不依赖 LangChain Agent 封装 |
-| **CoT 思维链** | 结构化 Prompt 模板，引导模型分步推理 |
-| **自动校验重试** | LLM 输出格式校验 + 参数 Schema 验证 + 最多3次重试 |
-| **8个内置工具** | 文档检索(3) + SQL查询(3) + 数学计算(2) |
-| **记忆压缩** | 滑动窗口 + 关键信息提取压缩，稳定支持8轮以上对话 |
-| **SQL持久化** | 会话/消息/工具调用/执行日志全量落库 |
-| **全局异常处理** | 统一异常体系 + 超时控制 + LLM重试 |
-| **Swagger文档** | 自动生成接口文档，可在线调试 |
+| **用户系统** | 手机号注册/登录、个人资料管理 |
+| **目标管理** | 创建目标、每日打卡、进度追踪、成员协作 |
+| **训练记录** | 训练计划、组数记录、休息计时、动作库 |
+| **日历日程** | 日历视图、事件管理、提醒通知 |
+| **AI 助手** | 智能对话、健身建议、数据分析 |
+
+## 技术栈
+
+### 后端
+- **框架**：FastAPI 0.100+
+- **ORM**：SQLAlchemy 2.0 (async)
+- **数据库**：SQLite (MVP) / PostgreSQL (生产)
+- **LLM**：DeepSeek API (兼容 OpenAI)
+
+### 前端
+- **框架**：Taro 3.6+ / React 18
+- **构建**：Vite 5
+- **UI**：自定义组件 + Taro Components
 
 ## 目录结构
 
 ```
-agent2/
-├── app/
-│   ├── main.py                 # FastAPI 入口 + 生命周期
-│   ├── core/                   # 配置层：config / logger / exceptions
-│   ├── db/                     # 数据库层：ORM模型 / Repository
-│   ├── models/                 # 模型层：LLM封装 / Pydantic Schema
-│   ├── tools/                  # 工具管理层：8个内置工具
-│   │   ├── document/           #   文档检索工具(3)
-│   │   ├── sql/                #   SQL查询工具(3)
-│   │   └── math/               #   数学计算工具(2)
-│   ├── memory/                 # 记忆管理层：滑动窗口 + 压缩
-│   ├── agent/                  # ReAct推理层：引擎/CoT/校验器
-│   └── api/                    # API接口层：路由/依赖
-├── run.py                      # 一键启动
-├── requirements.txt            # 依赖锁定
-├── .env.template               # 环境配置模板
+GrelinMisay/
+├── app/                        # 后端代码
+│   ├── main.py                 # FastAPI 入口
+│   ├── core/                   # 配置、日志、异常
+│   ├── db/                     # 数据库模型
+│   │   ├── database.py         # 数据库连接
+│   │   └── models.py           # ORM 模型
+│   ├── api/                    # API 路由
+│   │   ├── router.py           # 路由注册
+│   │   ├── g_auth.py           # 认证 API
+│   │   ├── g_users.py          # 用户 API
+│   │   ├── g_goals.py          # 目标 API
+│   │   ├── g_training.py       # 训练 API
+│   │   ├── g_calendar.py       # 日历 API
+│   │   ├── g_ai.py             # AI 对话 API
+│   │   └── g_schemas.py        # 请求/响应模型
+│   ├── agent/                  # ReAct Agent 引擎
+│   ├── tools/                  # 内置工具
+│   └── memory/                 # 记忆管理
+├── grelinmisay-app/            # 前端代码
+│   ├── src/
+│   │   ├── pages/              # 页面组件
+│   │   │   ├── login/          # 登录页
+│   │   │   ├── register/       # 注册页
+│   │   │   ├── home/           # 首页
+│   │   │   ├── goals/          # 目标页
+│   │   │   ├── training/       # 训练页
+│   │   │   ├── profile/        # 个人中心
+│   │   │   └── ai/             # AI 助手
+│   │   ├── services/           # API 服务
+│   │   └── taro-adapter/       # Taro 适配层
+│   ├── package.json
+│   └── vite.config.ts
+├── data/                       # 数据目录
+├── requirements.txt            # Python 依赖
+├── DEPLOY_GUIDE.md             # 部署指南
+├── GrelinMisay_PRD_v1.1.0.md   # 产品需求文档
 └── README.md
 ```
 
 ## 快速开始
 
-### 1. 环境要求
+### 环境要求
 
 - Python >= 3.10
-- pip
+- Node.js >= 18
+- npm / yarn
 
-### 2. 安装依赖
+### 后端启动
 
 ```bash
-# 创建虚拟环境（推荐）
-python -m venv .venv
-
-# 激活虚拟环境
-# Windows:
-.venv\Scripts\activate
-# Linux/Mac:
-source .venv/bin/activate
-
 # 安装依赖
 pip install -r requirements.txt
+
+# 配置环境变量
+cp .env.template .env
+# 编辑 .env，填入 LLM_API_KEY
+
+# 启动服务
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. 配置 API Key
+### 前端启动
 
 ```bash
-# 复制配置模板
-copy .env.template .env    # Windows
-cp .env.template .env      # Linux/Mac
+cd grelinmisay-app
 
-# 编辑 .env，填入你的 API Key
-# LLM_API_KEY=sk-your-api-key-here
+# 安装依赖
+npm install
+
+# 开发模式 (H5)
+npm run dev
+
+# 构建 H5
+npm run build:h5
+
+# 构建微信小程序
+npm run build:weapp
+
+# 构建 APP
+npm run build:app
 ```
 
-### 4. 启动服务
+### 访问地址
 
-```bash
-python run.py
-
-# 或指定端口
-python run.py --port=9000
-
-# 开发模式（热重载）
-python run.py --reload
-```
-
-### 5. 访问接口文档
-
-| 地址 | 说明 |
+| 服务 | 地址 |
 |------|------|
-| http://localhost:8000/docs | Swagger UI 接口文档 |
-| http://localhost:8000/redoc | ReDoc 接口文档 |
-| http://localhost:8000/api/health | 健康检查 |
+| 前端 H5 | http://localhost:10086 |
+| 后端 API | http://localhost:8000 |
+| API 文档 | http://localhost:8000/docs |
+| 健康检查 | http://localhost:8000/api/health |
 
 ## API 接口
 
-### 对话接口
+### 认证
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/auth/send_code` | 发送验证码 |
+| POST | `/api/auth/register` | 注册账号 |
+| POST | `/api/auth/login` | 登录 |
+
+### 用户
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/users/me` | 获取个人信息 |
+| PUT | `/api/users/me` | 更新个人信息 |
+
+### 目标
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/goals` | 目标列表 |
+| POST | `/api/goals` | 创建目标 |
+| PUT | `/api/goals/{id}` | 更新目标 |
+| DELETE | `/api/goals/{id}` | 删除目标 |
+| POST | `/api/goals/{id}/checkin` | 打卡 |
+| GET | `/api/goals/{id}/stats` | 统计数据 |
+
+### 训练
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/training/actions` | 动作库 |
+| GET | `/api/training/records` | 训练记录 |
+| POST | `/api/training/records` | 创建记录 |
+
+### 日历
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/calendar/events` | 日历事件 |
+
+### AI
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/ai/chat` | AI 对话 |
+
+## 数据库模型
+
+| 表名 | 说明 |
+|------|------|
+| `g_users` | 用户表 |
+| `g_goals` | 目标表 |
+| `g_goal_members` | 目标成员表 |
+| `g_goal_checkins` | 目标打卡表 |
+| `g_training_records` | 训练记录表 |
+| `g_training_sets` | 训练组表 |
+| `g_calendar_events` | 日历事件表 |
+| `g_ai_chat_messages` | AI 对话记录表 |
+
+## 部署
+
+详细部署指南请参阅 [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md)。
+
+### Docker 一键部署
 
 ```bash
-# 发起对话
-POST /api/chat/send
-{
-  "session_id": null,        # 可选，为空则创建新会话
-  "message": "帮我计算 156 * 23 + 89 除以 7 的结果"
-}
+docker compose up -d --build
 ```
 
-响应示例：
-```json
-{
-  "session_id": "a1b2c3d4e5f6",
-  "message": "计算结果为 525.2857...",
-  "reaction_steps": [
-    {
-      "iteration": 1,
-      "thought": "需要先用计算器计算乘法...",
-      "action": "calculator",
-      "action_input": {"expression": "156 * 23"},
-      "observation": "成功: 计算结果: 3588",
-      "duration_ms": 1200
-    }
-  ],
-  "tool_calls_count": 2,
-  "total_duration_ms": 3500
-}
-```
+### 手动部署
 
-### 会话管理
+1. 后端：Gunicorn + Uvicorn
+2. 前端：Nginx 托管静态文件
+3. 反向代理：Nginx 代理 API 请求
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/sessions/create` | 创建会话 |
-| GET | `/api/sessions/list` | 会话列表 |
-| GET | `/api/sessions/{id}` | 会话详情 |
-| DELETE | `/api/sessions/{id}` | 删除会话 |
+## 开发计划
 
-### 工具管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/tools/list` | 工具列表 |
-| GET | `/api/tools/{name}` | 工具详情 |
-| GET | `/api/tools/{name}/schema` | OpenAI Schema |
-
-## 工具列表
-
-| 分类 | 工具名 | 功能 |
-|------|--------|------|
-| 文档检索 | `document_search` | 关键词搜索文档 |
-| 文档检索 | `file_reader` | 读取本地文件 |
-| 文档检索 | `web_fetch` | 抓取网页内容 |
-| SQL查询 | `sql_query` | 执行SELECT查询 |
-| SQL查询 | `schema_explorer` | 探查表结构 |
-| SQL查询 | `data_analyzer` | 数据统计分析 |
-| 数学计算 | `calculator` | 表达式计算 |
-| 数学计算 | `statistics` | 描述性统计 |
-
-## 技术架构
-
-```
-用户请求 → API接口层(api/)
-              ↓
-        ReAct推理引擎(agent/)
-         ↙        ↓         ↘
-   记忆层(memory/)  工具层(tools/)  CoT Prompt(agent/cot_prompt.py)
-              ↓
-        模型层(models/llm.py) ←→ 数据库层(db/)
-              ↑
-        配置层(core/)  ← 全局异常/日志/配置
-```
-
-## 配置说明
-
-所有配置通过 `.env` 文件管理：
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `LLM_API_KEY` | API密钥 | - |
-| `LLM_API_BASE` | API地址 | `https://api.openai.com/v1` |
-| `LLM_MODEL_NAME` | 模型名称 | `gpt-4o` |
-| `REACT_MAX_ITERATIONS` | 最大推理轮数 | 10 |
-| `MEMORY_WINDOW_SIZE` | 滑动窗口大小 | 12 |
-| `DB_TYPE` | 数据库类型 | sqlite |
+- [x] 用户认证系统
+- [x] 目标管理 CRUD
+- [x] 训练记录功能
+- [x] 日历日程管理
+- [x] AI 对话助手
+- [ ] 微信小程序端
+- [ ] APP 打包
+- [ ] 数据可视化
+- [ ] 社交功能
 
 ## 许可证
 

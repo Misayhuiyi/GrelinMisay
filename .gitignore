@@ -1,6 +1,13 @@
 # --- 环境配置 ---
 .env
 
+# --- 前端 ---
+node_modules/
+*.lock
+package-lock.json
+grelinmisay-app/.home/
+grelinmisay-app/.taro_cache/
+
 # --- Python ---
 __pycache__/
 *.py[cod]
