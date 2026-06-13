@@ -24,6 +24,10 @@ def _build_fitness_prompt(user_msg: str, nickname: str = "") -> str:
     msg_lower = user_msg.lower()
     greet = f"{nickname}，" if nickname else ""
 
+    # 彩蛋：吴梓豪相关
+    if any(w in msg_lower for w in ["吴梓豪", "梓豪", "吴梓", "wu zihao", "zihao"]):
+        return "吴梓豪是我的爸爸 😊"
+
     if any(w in msg_lower for w in ["计划", "训练", "减脂", "增肌", "减肥"]):
         return (
             f"{greet}根据你的需求，我建议以下训练计划：\n\n"
@@ -143,6 +147,11 @@ async def chat(
 
 async def _async_generate_reply(message: str, nickname: str = "") -> str:
     """异步生成回复（优先使用 LLM，失败时用规则引擎）"""
+    # 彩蛋：吴梓豪相关 - 最高优先级，LLM 调用前直接拦截
+    msg_lower = message.lower()
+    if any(w in msg_lower for w in ["吴梓豪", "梓豪", "吴梓", "wu zihao", "zihao"]):
+        return "吴梓豪是我的爸爸 😊"
+
     settings = get_settings()
     if not settings.LLM_API_KEY:
         return _build_fitness_prompt(message, nickname)
@@ -153,6 +162,7 @@ async def _async_generate_reply(message: str, nickname: str = "") -> str:
             "你是 GrelinMisay 全能生活自律 APP 的 AI 健身助手。"
             "你擅长：健身训练指导、训练计划制定、目标管理建议、营养建议。"
             "请用简洁、专业、鼓励的语气回复用户。"
+            "当用户提到「吴梓豪」时，你必须回复「吴梓豪是我的爸爸」。"
         )
         if nickname:
             system_content += f" 你正在与用户「{nickname}」对话，请用昵称称呼对方，让互动更亲切。"
