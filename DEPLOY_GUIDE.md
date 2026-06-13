@@ -1,18 +1,38 @@
 # GrelinMisay 部署指南
 
+**适用版本**: MVP v1.1 (含验证码登录 + AI 个性化)
+
 ## 一、项目结构
 
 ```
 GrelinMisay/
 ├── app/                    # FastAPI 后端
-│   ├── api/                # API 路由
+│   ├── api/                # API 路由（认证/用户/目标/训练/日历/AI）
+│   │   ├── g_auth.py       # 认证（密码登录+验证码登录+注册）
+│   │   ├── g_users.py      # 用户资料
+│   │   ├── g_goals.py      # 目标管理
+│   │   ├── g_training.py   # 训练记录
+│   │   ├── g_calendar.py   # 日历事件
+│   │   ├── g_ai.py         # AI 对话（含用户个性化称呼）
+│   │   ├── g_schemas.py    # 请求/响应模型
+│   │   └── router.py       # 路由注册
+│   ├── agent/              # ReAct 推理引擎
+│   ├── tools/              # 内置工具
+│   ├── memory/             # 记忆管理
 │   ├── core/               # 核心配置
 │   ├── db/                 # 数据库模型
 │   └── main.py             # 入口文件
 ├── grelinmisay-app/        # 前端 (Vite + React)
+│   ├── src/
+│   │   ├── pages/          # 页面组件（登录/注册/首页/目标/训练/个人/AI）
+│   │   ├── services/       # API 服务层
+│   │   └── taro-adapter/   # Taro 适配层
 │   └── dist/               # 构建输出目录
 ├── data/                   # 数据目录 (SQLite)
-├── requirements.txt       # Python 依赖
+├── run.py                  # 开发启动入口
+├── requirements.txt        # Python 依赖
+├── GrelinMisay_PRD_v1.1.0.md   # 产品需求文档
+├── GrelinMisay_迭代复盘_v1.0.md # 迭代复盘文档
 └── DEPLOY_GUIDE.md         # 本文档
 ```
 
@@ -77,10 +97,14 @@ DB_PATH=./data/agent.db
 EOF
 ```
 
-### 5. 启动后端服务 (Gunicorn)
+### 5. 启动后端服务
 
 ```bash
-# 安装 gunicorn
+# 开发模式（推荐初次部署测试）
+source venv/bin/activate
+nohup python run.py > logs/app.log 2>&1 &
+
+# 生产模式 (Gunicorn)
 pip install gunicorn
 
 # 后台启动 (绑定 127.0.0.1:8000，仅后端自身)

@@ -1,8 +1,8 @@
 # GrelinMisay MVP 版本迭代复盘文档
 
-**文档版本**: v1.1
+**文档版本**: v1.2
 **复盘日期**: 2026-06-13
-**复盘范围**: Phase 1 MVP（Week 1）+ 验证码登录补充
+**复盘范围**: Phase 1 MVP（Week 1）+ 验证码登录 + AI个性化修复
 **项目仓库**: https://github.com/Misayhuiyi/GrelinMisay
 
 ---
@@ -38,21 +38,23 @@
 
 | 层级 | 文件数 | 代码行数（估算） | 说明 |
 |------|--------|-----------------|------|
-| **后端 API** | 8个文件 | ~600行 | g_auth / g_users / g_goals / g_training / g_calendar / g_ai / g_schemas / router |
+| **后端 API** | 8个文件 | ~650行 | g_auth / g_users / g_goals / g_training / g_calendar / g_ai / g_schemas / router（新增 login_by_code 端点 + LoginByCodeRequest schema） |
 | **数据库模型** | 1个文件 | ~200行 | 8张业务表 + 4张Agent表 |
-| **前端页面** | 12个文件 | ~900行 | login / register / home / goals / training / profile / ai 及其CSS |
-| **前端服务层** | 1个文件 | ~70行 | api.ts（统一请求封装 + 5个API模块） |
+| **前端页面** | 12个文件 | ~1000行 | login（双模式改造） / register / home / goals / training / profile / ai 及其CSS |
+| **前端服务层** | 1个文件 | ~80行 | api.ts（统一请求封装 + 5个API模块，新增 loginByCode） |
 | **Taro适配层** | 3个文件 | ~150行 | taro.ts / components.tsx / router.tsx |
 | **前端配置** | 6个文件 | ~80行 | vite / tsconfig / package.json / app.config 等 |
 | **项目文档** | 3个文件 | ~800行 | PRD / README / DEPLOY_GUIDE |
-| **合计** | 34个文件 | ~2800行 | 不含node_modules和__pycache__ |
+| **合计** | 34个文件 | ~2960行 | 不含node_modules和__pycache__ |
 
 ### 2.2 功能交付矩阵
 
 | 模块 | 功能点 | MVP完成度 | 备注 |
 |------|--------|----------|------|
 | **账号系统** | 手机号+密码登录 | 100% | SHA256密码哈希，Bearer Token鉴权 |
+| | 手机号+验证码登录 | 100% | 模拟验证码（固定123456），5分钟有效期，60秒发送间隔 |
 | | 手机号+验证码发送 | 100% | 模拟验证码（固定123456） |
+| | 登录方式切换 | 100% | 前端Tab切换密码登录/验证码登录 |
 | | 新用户注册 | 100% | 手机号/密码/昵称 |
 | | Token鉴权 | 100% | 7天有效期，覆盖所有业务接口 |
 | | 退出登录 | 100% | 确认弹窗 → 清除Token → 跳转登录 |
@@ -86,7 +88,7 @@
 
 | # | 验收标准 | 状态 | 证据 |
 |---|---------|------|------|
-| 1 | 可通过手机号+验证码登录 | PASS | `/api/auth/login` 接口正常，支持手机号+密码登录 |
+| 1 | 可通过手机号+密码或手机号+验证码登录 | PASS | `/api/auth/login` + `/api/auth/login_by_code` 双接口正常，前端Tab切换 |
 | 2 | 可注册新账号 | PASS | `/api/auth/register` 接口正常，SHA256加密存储 |
 | 3 | 可退出登录 | PASS | Profile页面确认弹窗，清除Token+Storage |
 | 4 | Token有效期内无需重复登录 | PASS | Bearer Token机制，`get_current_user` 依赖注入 |
@@ -122,12 +124,13 @@
 | 1 | `g_config.py` 不是FastAPI路由器，导致 `/api/config/actions` 返回404 | 高 | 删除 `app/api/g_config.py`（仅为常量定义文件，从未在router.py注册） | 训练动作数据获取 |
 | 2 | 前端训练动作数据硬编码在组件中，不经过后端API | 中 | 改为 `useEffect` + `trainingAPI.actions()` 动态获取，失败回退到 `DEFAULT_ACTIONS` | training/index.tsx + api.ts |
 | 3 | GitHub推送失败（443端口连接超时） | 低 | 沙箱环境网络限制，需用户本地手动执行 `git push` | 代码发布 |
+| 4 | 新增 `login_by_code` 端点返回404 | 中 | 后端未重启导致旧进程占用端口，`taskkill` + 重新 `python run.py` 解决 | 验证码登录 |
 
 ### 4.2 已知限制
 
 | 问题 | 计划解决 |
 |------|---------|
-| 验证码固定123456（模拟） | Phase 3接入真实短信服务 |
+| 验证码固定123456（模拟），无真实短信发送 | Phase 3接入真实短信服务 |
 | Token存储在内存字典，重启失效 | Phase 4迁移JWT+Redis |
 | AI当前为规则引擎+LLM回退 | Phase 2增强上下文感知 |
 | 个人资料编辑前端未暴露UI | Phase 3个人中心增强 |
@@ -152,8 +155,8 @@
 ### 5.2 各模块深度评价
 
 #### 账号系统 (g_auth)
-- **亮点**：注册/登录接口返回统一APIResponse格式，Token中间件可复用
-- **不足**：验证码无过期自动清理，Token无过期时间
+- **亮点**：注册/登录接口返回统一APIResponse格式，Token中间件可复用；支持密码+验证码双模式登录，验证码有过期机制（5分钟）
+- **不足**：Token无过期自动清理，验证码仍为固定值模拟
 
 #### 目标管理 (g_goals)
 - **亮点**：打卡进度自动计算（+10%→100%→completed），用户数据隔离
@@ -228,9 +231,10 @@ Phase 2 需要的数据库字段和API基础已大部分就绪：
 
 | 接口 | 状态 | 前端对接 |
 |------|------|---------|
-| `POST /api/auth/send_code` | 已实现 | 未对接（前端直接使用密码登录） |
+| `POST /api/auth/send_code` | 已实现 | 已对接（验证码登录使用） |
 | `POST /api/auth/register` | 已实现 | 已对接 |
-| `POST /api/auth/login` | 已实现 | 已对接 |
+| `POST /api/auth/login` | 已实现 | 已对接（密码登录） |
+| `POST /api/auth/login_by_code` | 已实现 | 已对接（验证码登录，新增） |
 | `GET /api/users/me` | 已实现 | 已对接（Profile页） |
 | `PUT /api/users/me` | 已实现 | 未对接（前端无编辑UI） |
 | `GET /api/goals` | 已实现 | 已对接 |
@@ -245,8 +249,8 @@ Phase 2 需要的数据库字段和API基础已大部分就绪：
 | `GET /api/calendar/events` | 已实现 | 已对接 |
 | `POST /api/ai/chat` | 已实现 | 已对接 |
 
-**接口实现率：16/16 = 100%（PRD MVP范围内）**
-**前后端对接率：13/16 = 81%**（4个API已实现但前端未对接，1个用于Phase 2+）
+**接口实现率：17/17 = 100%（PRD MVP范围内）**
+**前后端对接率：15/17 = 88%**（2个API已实现但前端未对接，1个用于Phase 2+）
 
 ---
 
@@ -323,8 +327,8 @@ Phase 2 需要的数据库字段和API基础已大部分就绪：
 
 ### MVP总体评价
 
-GrelinMisay MVP 版本在1周内完成了**5大核心模块**的开发和联调：
-- 账号认证系统（登录/注册/Token鉴权）
+GrelinMisay MVP 版本在1周内完成了**5大核心模块**的开发和联调，并补充了验证码登录功能：
+- 账号认证系统（密码登录/验证码登录/注册/Token鉴权）
 - 首页日历（周视图+今日事务+快捷入口）
 - 目标管理（创建/列表/打卡/删除）
 - 训练记录（动作库/多组记录/历史查看）
