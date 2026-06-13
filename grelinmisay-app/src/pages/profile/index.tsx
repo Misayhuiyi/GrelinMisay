@@ -21,6 +21,19 @@ export default function Profile() {
     }
   };
 
+  const handleAbout = () => {
+    Taro.showModal({
+      title: '关于 GrelinMisay',
+      content: 'GrelinMisay v1.1.0\n全能生活自律 APP\n\n健身训练 / 目标管理 / AI 助手\n\nPower by GLM-4.6V-Flash',
+      showCancel: false,
+      confirmText: '知道了',
+    });
+  };
+
+  const handleSettings = () => {
+    Taro.showToast({ title: '系统设置开发中', icon: 'none' });
+  };
+
   const handleLogout = () => {
     Taro.showModal({
       title: '确认退出',
@@ -63,12 +76,12 @@ export default function Profile() {
       </View>
 
       <View className="menu-section">
-        <View className="menu-item">
+        <View className="menu-item" onClick={handleAbout}>
           <Text className="menu-icon">📋</Text>
           <Text className="menu-label">关于 GrelinMisay</Text>
           <Text className="menu-arrow">{'>'}</Text>
         </View>
-        <View className="menu-item">
+        <View className="menu-item" onClick={handleSettings}>
           <Text className="menu-icon">⚙️</Text>
           <Text className="menu-label">系统设置</Text>
           <Text className="menu-arrow">{'>'}</Text>
