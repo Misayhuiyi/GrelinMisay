@@ -378,13 +378,44 @@ docker compose ps
 docker compose logs -f
 ```
 
-> `docker-compose.yml` 包含两个服务：
-> - **backend**：FastAPI 后端，端口 `8000`，健康检查已内置
-> - **nginx**：前端静态文件 + API 反向代理，端口 `80`
->
-> 访问 `http://localhost` 即可使用完整应用。
+### 5.3 访问地址
 
-## 五、验证部署
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| 前端页面 | `http://localhost` | Nginx 托管，端口 80 |
+| API 文档 | `http://localhost:8000/docs` | Swagger UI，直接连后端 |
+| 健康检查 | `http://localhost:8000/api/health` | 后端健康状态 |
+
+### 5.4 Docker 开机自启
+
+`docker-compose.yml` 中已配置 `restart: unless-stopped`，容器退出后会自动重启。还需确保 Docker 服务自身开机启动：
+
+```bash
+sudo systemctl enable docker
+sudo systemctl status docker
+```
+
+> 服务器重启后，Docker 自动启动，随后容器被拉起（`restart: unless-stopped`）。
+
+### 5.5 常用管理命令
+
+```bash
+docker compose ps                    # 查看服务状态
+docker compose logs -f backend       # 后端实时日志
+docker compose logs -f nginx         # Nginx 实时日志
+docker compose restart backend       # 重启后端（代码更新后）
+docker compose down                  # 停止并删除容器
+docker compose up -d --build         # 重新构建并启动
+```
+
+### 5.6 数据持久化
+
+| 数据 | 卷名 | 容器内路径 | 说明 |
+|------|------|------------|------|
+| SQLite 数据库 | `backend_data` | `/app/data` | 用户数据、对话记录 |
+| 运行日志 | `backend_logs` | `/app/logs` | 应用日志 |
+
+## 六、验证部署
 
 ```bash
 # 健康检查
@@ -423,7 +454,7 @@ curl -X POST http://localhost:8000/api/chat/send \
   -d '{"message":"你好，帮我算一下 123 * 456"}'
 ```
 
-## 六、更新部署
+## 七、更新部署
 
 ```bash
 # 拉取最新代码
@@ -433,14 +464,14 @@ git pull origin main
 docker compose down
 docker compose up -d --build
 
-# 非 Docker 方式
+# 非 Docker 方式（使用 systemd）
 source venv/bin/activate
 pip install -r requirements.txt
-pkill -f gunicorn
-nohup gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8000 --timeout 120 > logs/gunicorn.log 2>&1 &
+sudo systemctl restart grelinmisay-backend
+sudo systemctl status grelinmisay-backend
 ```
 
-## 七、常见问题
+## 八、常见问题
 
 ### 1. 后端启动失败
 
