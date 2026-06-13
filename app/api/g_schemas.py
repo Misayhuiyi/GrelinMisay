@@ -27,6 +27,11 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=6)
 
 
+class LoginByCodeRequest(BaseModel):
+    phone: str = Field(..., pattern=r"^1[3-9]\d{9}$")
+    code: str = Field(..., min_length=4, max_length=6)
+
+
 class RegisterRequest(BaseModel):
     phone: str = Field(..., pattern=r"^1[3-9]\d{9}$")
     password: str = Field(..., min_length=6)

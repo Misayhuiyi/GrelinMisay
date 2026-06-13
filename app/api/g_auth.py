@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.db.models import User
 from app.api.g_schemas import (
-    SendCodeRequest, LoginRequest, RegisterRequest,
+    SendCodeRequest, LoginRequest, LoginByCodeRequest, RegisterRequest,
     AuthResponse, APIResponse,
 )
 from app.core.logger import logger
@@ -108,6 +108,40 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     _token_store[token] = user.id
 
     logger.info(f"用户登录: {req.phone}")
+    return APIResponse(data={
+        "token": token,
+        "user_id": user.id,
+        "nickname": user.nickname,
+        "phone": user.phone,
+    })
+
+
+@router.post("/login_by_code", response_model=APIResponse)
+async def login_by_code(req: LoginByCodeRequest, db: AsyncSession = Depends(get_db)):
+    """验证码登录"""
+    # 验证验证码
+    cached = _verify_codes.get(req.phone)
+    if not cached:
+        raise HTTPException(status_code=400, detail="请先获取验证码")
+    if datetime.utcnow() > cached["expires"]:
+        del _verify_codes[req.phone]
+        raise HTTPException(status_code=400, detail="验证码已过期，请重新获取")
+    if cached["code"] != req.code:
+        raise HTTPException(status_code=400, detail="验证码错误")
+
+    # 清除已使用的验证码
+    del _verify_codes[req.phone]
+
+    # 查找用户
+    result = await db.execute(select(User).where(User.phone == req.phone))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="该手机号未注册，请先注册")
+
+    token = _generate_token()
+    _token_store[token] = user.id
+
+    logger.info(f"用户验证码登录: {req.phone}")
     return APIResponse(data={
         "token": token,
         "user_id": user.id,

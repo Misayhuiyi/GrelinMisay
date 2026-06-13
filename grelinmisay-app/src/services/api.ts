@@ -31,6 +31,8 @@ export const authAPI = {
     request('/auth/register', { method: 'POST', body: { phone, password, nickname } }),
   login: (phone: string, password: string) =>
     request('/auth/login', { method: 'POST', body: { phone, password } }),
+  loginByCode: (phone: string, code: string) =>
+    request('/auth/login_by_code', { method: 'POST', body: { phone, code } }),
 };
 
 // 用户

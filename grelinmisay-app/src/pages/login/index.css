@@ -30,7 +30,33 @@
   width: 100%;
   background: #FFFFFF;
   border-radius: 16px;
-  padding: 32px 24px;
+  padding: 24px;
+}
+
+/* 登录方式切换 Tab */
+.login-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  background: #F3F4F6;
+  padding: 4px;
+}
+
+.login-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 14px;
+  color: #6B7280;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.login-tab.active {
+  background: #FFFFFF;
+  color: #4F46E5;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .form-item {
@@ -52,6 +78,41 @@
   padding: 0 16px;
   font-size: 16px;
   background: #F9FAFB;
+  box-sizing: border-box;
+}
+
+/* 验证码行 */
+.code-row {
+  display: flex;
+  gap: 12px;
+}
+
+.code-input {
+  flex: 1;
+}
+
+.code-btn {
+  width: 120px;
+  height: 48px;
+  font-size: 13px;
+  border-radius: 8px;
+  background: #EEF2FF;
+  color: #4F46E5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  white-space: nowrap;
+}
+
+.code-btn::after {
+  border: none;
+}
+
+.code-btn.counting {
+  background: #F3F4F6;
+  color: #9CA3AF;
 }
 
 .login-btn {
@@ -60,7 +121,7 @@
   background: #4F46E5 !important;
   color: #FFFFFF !important;
   border-radius: 8px !important;
-  margin-top: 24px !important;
+  margin-top: 8px !important;
   font-size: 16px !important;
   font-weight: 600 !important;
   border: none !important;
