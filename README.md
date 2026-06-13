@@ -136,7 +136,8 @@ npm run build:app
 |------|------|------|
 | POST | `/api/auth/send_code` | 发送验证码 |
 | POST | `/api/auth/register` | 注册账号 |
-| POST | `/api/auth/login` | 登录 |
+| POST | `/api/auth/login` | 密码登录 |
+| POST | `/api/auth/login_by_code` | 验证码登录 |
 
 ### 用户
 
@@ -207,7 +208,7 @@ docker compose up -d --build
 
 ## 开发计划
 
-- [x] 用户认证系统
+- [x] 用户认证系统（密码+验证码双模式）
 - [x] 目标管理 CRUD
 - [x] 训练记录功能
 - [x] 日历日程管理

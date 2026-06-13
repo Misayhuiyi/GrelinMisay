@@ -34,6 +34,7 @@ from app.agent.cot_prompt import (
     wrap_user_message,
     format_observation,
     get_retry_prompt,
+    build_user_context_prompt,
 )
 from app.agent.validator import OutputValidator
 
@@ -79,6 +80,7 @@ class ReActEngine:
         conversation_history: list = None,
         on_tool_call: Callable = None,
         on_execution_log: Callable = None,
+        user_context: dict = None,
     ) -> Dict[str, Any]:
         """
         执行 ReAct 推理的完整流程。
@@ -88,6 +90,7 @@ class ReActEngine:
             conversation_history: 历史消息列表 [{"role": ..., "content": ...}]
             on_tool_call: 工具调用回调 (tool_name, params, result, status, duration)
             on_execution_log: 执行日志回调 (iteration, thought, action, action_input, observation, duration)
+            user_context: 用户上下文 {"user_id": str, "nickname": str, "phone": str}
 
         Returns:
             {"answer": str, "steps": [...], "tool_calls_count": int, "total_duration_ms": int}
@@ -103,6 +106,12 @@ class ReActEngine:
         # 注入 System Prompt（含CoT模板 + 工具描述）
         tools_desc = self.registry.get_prompt_descriptions()
         system_prompt = build_system_prompt(tools_desc)
+
+        # 注入用户上下文（让 Agent 知道当前对话者是谁）
+        if user_context:
+            system_prompt += "\n" + build_user_context_prompt(user_context)
+            logger.info(f"[ReAct] 已注入用户上下文: user_id={user_context.get('user_id')}")
+
         window.reset_system(system_prompt)
 
         # 注入历史对话

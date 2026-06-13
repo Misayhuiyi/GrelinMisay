@@ -31,6 +31,7 @@
     "@babel/preset-typescript": "^7.29.7",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.6.2",
     "@tarojs/cli": "^4.2.0",
+    "@tarojs/webpack5-runner": "^4.2.0",
     "@types/react": "^18.0.0",
     "@vitejs/plugin-react": "^4.7.0",
     "babel-loader": "^10.1.1",

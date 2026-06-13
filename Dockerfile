@@ -1,33 +1,33 @@
 # ============================================================
-# ReAct+CoT AI Agent 智能助手 - Dockerfile
+# GrelinMisay 健身目标管理助手 - Dockerfile
 # 多阶段构建，减小最终镜像体积
 # ============================================================
 
 # ==================== 阶段1: 构建阶段 ====================
 FROM python:3.11-slim AS builder
 
-# 安装依赖到中性目录（避免绑定到特定用户）
+# 安装 Python 依赖到独立前缀目录
 COPY requirements.txt .
-RUN pip install --no-cache-dir --target=/install -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ==================== 阶段2: 运行阶段 ====================
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# 从构建阶段复制已安装的包到系统目录（对所有用户可见）
-COPY --from=builder /install /usr/local/lib/python3.11/site-packages/
+# 从构建阶段复制依赖到系统目录
+COPY --from=builder /install /usr/local
 
-# 创建非 root 用户运行应用（安全最佳实践）
-RUN groupadd -r agent && useradd -r -g agent agent \
+# 创建非 root 用户
+RUN groupadd -r appuser && useradd -r -g appuser appuser \
     && mkdir -p /app/data /app/logs \
-    && chown -R agent:agent /app
+    && chown -R appuser:appuser /app
 
 # 复制应用代码
-COPY --chown=agent:agent . .
+COPY --chown=appuser:appuser . .
 
 # 切换到非 root 用户
-USER agent
+USER appuser
 
 # 暴露端口
 EXPOSE 8000

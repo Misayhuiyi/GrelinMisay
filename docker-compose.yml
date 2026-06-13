@@ -1,20 +1,32 @@
 # ============================================================
-# ReAct+CoT AI Agent 智能助手 - Docker Compose 编排
+# GrelinMisay 健身目标管理助手 - Docker Compose 编排
 # ============================================================
+#
+# 启动前准备：
+#   1. cp .env.template .env 并编辑填入 LLM_API_KEY
+#   2. cd grelinmisay-app && npm install && npm run build:h5 && cd ..
+#   3. docker compose up -d --build
+#
+# 访问：
+#   前端: http://localhost
+#   API文档: http://localhost:8000/docs
+#   健康检查: http://localhost:8000/api/health
 
 services:
-  agent:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: react_agent
+    container_name: grelinmisay_backend
     restart: unless-stopped
     ports:
-      - "8080:8000"
-    # 环境变量（敏感信息建议通过 .env 文件传入）
+      - "8000:8000"
+    # 环境变量（通过 .env 文件传入）
+    env_file:
+      - .env
     environment:
-      # --- LLM 配置（必须修改为自己的 API Key） ---
-      - LLM_API_KEY=${LLM_API_KEY:-your-api-key-here}
+      # --- LLM 配置 ---
+      - LLM_API_KEY=${LLM_API_KEY:-}
       - LLM_API_BASE=${LLM_API_BASE:-https://api.deepseek.com/v1}
       - LLM_MODEL_NAME=${LLM_MODEL_NAME:-deepseek-chat}
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.3}
@@ -42,22 +54,44 @@ services:
       - LOG_DIR=./logs
       - LOG_MAX_BYTES=${LOG_MAX_BYTES:-10485760}
       - LOG_BACKUP_COUNT=${LOG_BACKUP_COUNT:-5}
-    # 持久化数据（数据库、日志）
+    # 持久化数据
     volumes:
-      - agent_data:/app/data
-      - agent_logs:/app/logs
-    # 网络
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
-      - agent_network
+      - grelinmisay_network
 
-# 命名卷（Docker 自动管理，数据持久化）
+  nginx:
+    image: nginx:alpine
+    container_name: grelinmisay_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      # 前端构建产物（需先执行 npm run build:h5）
+      - ./grelinmisay-app/dist:/usr/share/nginx/html:ro
+      # Nginx 配置
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - grelinmisay_network
+
+# 命名卷
 volumes:
-  agent_data:
+  backend_data:
     driver: local
-  agent_logs:
+  backend_logs:
     driver: local
 
 # 网络
 networks:
-  agent_network:
+  grelinmisay_network:
     driver: bridge
