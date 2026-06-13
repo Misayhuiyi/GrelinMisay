@@ -24,7 +24,7 @@ export default function Profile() {
   const handleAbout = () => {
     Taro.showModal({
       title: '关于 GrelinMisay',
-      content: 'GrelinMisay v1.1.0\n全能生活自律 APP\n\n健身训练 / 目标管理 / AI 助手\n\nPower by GLM-4.6V-Flash',
+      content: 'GrelinMisay v1.1.0\n全能生活自律 APP\n\n健身训练 / 目标管理 / AI 助手\n\nPower by GLM-4.6V-Flash\n\n开发团队：吴梓豪+吉祥物 Green',
       showCancel: false,
       confirmText: '知道了',
     });
