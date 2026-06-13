@@ -19,13 +19,14 @@ from app.core.config import get_settings
 router = APIRouter(prefix="/api/ai", tags=["AI助手"])
 
 
-def _build_fitness_prompt(user_msg: str) -> str:
-    """构建健身相关 AI 回复"""
+def _build_fitness_prompt(user_msg: str, nickname: str = "") -> str:
+    """构建健身相关 AI 回复（含用户称呼个性化）"""
     msg_lower = user_msg.lower()
+    greet = f"{nickname}，" if nickname else ""
 
     if any(w in msg_lower for w in ["计划", "训练", "减脂", "增肌", "减肥"]):
         return (
-            "根据你的需求，我建议以下训练计划：\n\n"
+            f"{greet}根据你的需求，我建议以下训练计划：\n\n"
             "**减脂/塑形推荐**：\n"
             "1. 每周训练 4-5 天，每次 60-90 分钟\n"
             "2. 力量训练 + 有氧结合：先力量 40 分钟，再有氧 30 分钟\n"
@@ -36,7 +37,7 @@ def _build_fitness_prompt(user_msg: str) -> str:
 
     if any(w in msg_lower for w in ["胸", "卧推", "推胸"]):
         return (
-            "**胸部训练推荐**：\n\n"
+            f"{greet}**胸部训练推荐**：\n\n"
             "1. 杠铃卧推 4组 × 8-12次\n"
             "2. 上斜哑铃卧推 4组 × 10-12次\n"
             "3. 绳索夹胸 3组 × 12-15次\n"
@@ -46,7 +47,7 @@ def _build_fitness_prompt(user_msg: str) -> str:
 
     if any(w in msg_lower for w in ["背", "引体", "划船"]):
         return (
-            "**背部训练推荐**：\n\n"
+            f"{greet}**背部训练推荐**：\n\n"
             "1. 引体向上 4组 × 力竭\n"
             "2. 杠铃划船 4组 × 8-12次\n"
             "3. 高位下拉 4组 × 10-12次\n"
@@ -56,7 +57,7 @@ def _build_fitness_prompt(user_msg: str) -> str:
 
     if any(w in msg_lower for w in ["腿", "深蹲", "硬拉"]):
         return (
-            "**腿部训练推荐**：\n\n"
+            f"{greet}**腿部训练推荐**：\n\n"
             "1. 杠铃深蹲 5组 × 8-12次\n"
             "2. 罗马尼亚硬拉 4组 × 10-12次\n"
             "3. 腿举 4组 × 10-12次\n"
@@ -67,7 +68,7 @@ def _build_fitness_prompt(user_msg: str) -> str:
 
     if any(w in msg_lower for w in ["肩", "推举"]):
         return (
-            "**肩部训练推荐**：\n\n"
+            f"{greet}**肩部训练推荐**：\n\n"
             "1. 哑铃推举 4组 × 8-12次\n"
             "2. 侧平举 4组 × 12-15次\n"
             "3. 俯身飞鸟 3组 × 12-15次\n"
@@ -77,7 +78,7 @@ def _build_fitness_prompt(user_msg: str) -> str:
 
     if any(w in msg_lower for w in ["目标", "坚持", "自律"]):
         return (
-            "关于坚持目标，我有几点建议：\n\n"
+            f"{greet}关于坚持目标，我有几点建议：\n\n"
             "1. **从小目标开始**：不要一开始就定太高的目标\n"
             "2. **找到伙伴**：互相监督更容易坚持\n"
             "3. **记录进步**：看到自己的成长会很有动力\n"
@@ -87,7 +88,7 @@ def _build_fitness_prompt(user_msg: str) -> str:
         )
 
     return (
-        "你好！我是 GrelinMisay 的 AI 助手，可以帮你：\n\n"
+        f"{greet}我是 GrelinMisay 的 AI 助手，可以帮你：\n\n"
         "**健身训练**：制定训练计划、推荐训练动作\n"
         "**目标管理**：拆分目标、跟踪进度\n"
         "**日常咨询**：健身知识、营养建议\n\n"
@@ -118,7 +119,7 @@ async def chat(
     # 生成 AI 回复
     try:
         reply = await asyncio.wait_for(
-            _async_generate_reply(req.message),
+            _async_generate_reply(req.message, current_user.nickname),
             timeout=30,
         )
     except asyncio.TimeoutError:
@@ -140,27 +141,27 @@ async def chat(
     return APIResponse(data={"reply": reply, "conversation_id": current_user.id})
 
 
-async def _async_generate_reply(message: str) -> str:
+async def _async_generate_reply(message: str, nickname: str = "") -> str:
     """异步生成回复（优先使用 LLM，失败时用规则引擎）"""
     settings = get_settings()
     if not settings.LLM_API_KEY:
-        return _build_fitness_prompt(message)
+        return _build_fitness_prompt(message, nickname)
 
     try:
         from app.models.llm import llm_wrapper
+        system_content = (
+            "你是 GrelinMisay 全能生活自律 APP 的 AI 健身助手。"
+            "你擅长：健身训练指导、训练计划制定、目标管理建议、营养建议。"
+            "请用简洁、专业、鼓励的语气回复用户。"
+        )
+        if nickname:
+            system_content += f" 你正在与用户「{nickname}」对话，请用昵称称呼对方，让互动更亲切。"
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "你是 GrelinMisay 全能生活自律 APP 的 AI 健身助手。"
-                    "你擅长：健身训练指导、训练计划制定、目标管理建议、营养建议。"
-                    "请用简洁、专业、鼓励的语气回复用户。"
-                ),
-            },
+            {"role": "system", "content": system_content},
             {"role": "user", "content": message},
         ]
         response = await llm_wrapper.invoke(messages)
         return llm_wrapper.get_text_content(response)
     except Exception as e:
         logger.warning(f"LLM 调用失败，使用规则引擎: {e}")
-        return _build_fitness_prompt(message)
+        return _build_fitness_prompt(message, nickname)
