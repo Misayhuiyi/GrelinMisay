@@ -1,5 +1,5 @@
 # ============================================================
-# ReAct+CoT AI Agent 智能助手 - 依赖包清单
+# GrelinMisay 健身目标管理助手 - 依赖包清单
 # Python版本要求: >= 3.10
 # ============================================================
 # 生成方式: pip freeze | grep -E "fastapi|uvicorn|sqlalchemy|aiosqlite|pydantic|langchain|aiohttp|python-dotenv"

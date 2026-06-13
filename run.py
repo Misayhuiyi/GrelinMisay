@@ -30,7 +30,7 @@ def main():
             host = arg.split("=")[1]
 
     print("=" * 60)
-    print("  ReAct+CoT AI Agent 智能助手")
+    print("  GrelinMisay 健身目标管理助手")
     print(f"  启动地址: http://{host}:{port}")
     print(f"  Swagger文档: http://{host}:{port}/docs")
     print(f"  ReDoc文档: http://{host}:{port}/redoc")

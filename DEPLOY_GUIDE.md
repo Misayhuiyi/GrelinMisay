@@ -257,13 +257,21 @@ sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d your-domain.com
 ```
 
-### 9. 使用 systemd 管理服务 (可选)
+## 四、配置开机自启（重要）
+
+服务器重启后需要项目自动恢复运行，以下为完整的自启配置。
+
+### 4.1 后端自启（systemd）
+
+创建 systemd 服务文件：
 
 ```bash
 sudo nano /etc/systemd/system/grelinmisay-backend.service
 ```
 
-```
+写入以下内容：
+
+```ini
 [Unit]
 Description=GrelinMisay Backend
 After=network.target
@@ -281,17 +289,73 @@ WantedBy=multi-user.target
 ```
 
 ```bash
+# 重新加载 systemd 配置
 sudo systemctl daemon-reload
+
+# 启用开机自启
 sudo systemctl enable grelinmisay-backend
+
+# 立即启动服务
 sudo systemctl start grelinmisay-backend
+
+# 检查运行状态
 sudo systemctl status grelinmisay-backend
 ```
 
-## 四、Docker 部署 (推荐)
+常用管理命令：
 
-项目已包含完整的 `Dockerfile`、`docker-compose.yml` 和 `nginx.conf`，无需额外编写。
+```bash
+sudo systemctl start grelinmisay-backend     # 启动
+sudo systemctl stop grelinmisay-backend      # 停止
+sudo systemctl restart grelinmisay-backend   # 重启
+sudo systemctl status grelinmisay-backend    # 查看状态
+sudo journalctl -u grelinmisay-backend -f    # 实时日志
+```
 
-### 启动步骤
+### 4.2 Nginx 自启
+
+```bash
+# Nginx 通过 apt 安装后通常已自动启用自启，手动确认：
+sudo systemctl enable nginx
+sudo systemctl start nginx
+sudo systemctl status nginx
+```
+
+### 4.3 验证开机自启
+
+```bash
+# 重启服务器
+sudo reboot
+
+# 重新登录后验证后端
+sudo systemctl status grelinmisay-backend
+
+# 验证 Nginx
+sudo systemctl status nginx
+
+# 验证服务可访问
+curl http://localhost:8000/api/health
+curl http://localhost/
+```
+
+## 五、Docker 部署 (推荐)
+
+项目已包含 `Dockerfile`、`docker-compose.yml`、`nginx.conf` 和 `.dockerignore`，无需额外编写。
+
+### 5.1 架构说明
+
+```
+浏览器 :80 → nginx (前端静态文件 + /api/ 反向代理)
+                │
+                └→ backend:8000 (FastAPI + ReAct Agent)
+```
+
+| 组件 | 镜像 | 端口 | 作用 |
+|------|------|------|------|
+| backend | 本地构建 (python:3.11-slim) | 8000 | FastAPI 后端 + ReAct 引擎 |
+| nginx | nginx:alpine | 80 | 前端托管 + API 反向代理 |
+
+### 5.2 启动步骤
 
 ```bash
 # 1. 创建 .env 文件
